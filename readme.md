@@ -41,4 +41,4 @@ Set up using the included `requirements.txt` and your method of choice. For the 
 
 ## Usage
 
-Run with `python generate_textures.py`. Generated textures, models and blockstates will be placed in the `out/assets` directory. You can take the `assets` folder and pull it directly into your own resource pack entirely.
+Run with `python generate.py`. Generated textures, models and blockstates will be placed in the `out/assets` directory. You can take the `assets` folder and pull it directly into your own resource pack entirely.
