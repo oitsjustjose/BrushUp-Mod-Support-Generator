@@ -1,0 +1,11 @@
+.vscode
+
+# Python venv
+/Include
+/Lib
+/Scripts
+/share
+/pyvenv.cfg
+
+# Texture folders:
+/out
