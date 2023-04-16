@@ -1,5 +1,6 @@
 """Author: oitsjustjose @ github/twitter/curseforge"""
 
+import json
 import os
 import shutil
 
@@ -62,30 +63,25 @@ def generate_textures(modid: str, plank_path: str) -> None:
 
     plank_color = get_color_from_plank(f"./textures/{modid}/{plank_path}")
 
-    # --DISABLED-- Attempt to dynamically choose a darker base texture
-    # To re-enable, if change paths to {'light' if use_light else 'dark'}
-    # use_light = np.average(plank_color[:3], axis=0) > 128
-    for ref_text_path in os.listdir("./references/textures/dark"):
-        ref_text = cv2.imread(
-            f"./references/textures/dark/{ref_text_path}",
-            cv2.IMREAD_UNCHANGED,
-        )
+    for root, _, files in os.walk("./references/textures"):
+        for reference_path in files:
+            reference = cv2.imread(f"{root}/{reference_path}", cv2.IMREAD_UNCHANGED)
 
-        # Create bitmask, apply and fill with plank color
-        alpha = np.sum(ref_text, axis=-1) > 0
-        overlay = ref_text.copy()
-        overlay[alpha > 0] = plank_color
+            # Create bitmask, apply and fill with plank color
+            alpha = np.sum(reference, axis=-1) > 0
+            overlay = reference.copy()
+            overlay[alpha > 0] = plank_color
 
-        overlay = mat_to_pil(overlay)
-        ref_text = mat_to_pil(ref_text)
-        # Ugh, why does overlay work so well -_-
-        output = blendLayers(ref_text, overlay, BlendType.OVERLAY)
+            overlay = mat_to_pil(overlay)
+            ref_text = mat_to_pil(reference)
+            # Ugh, why does overlay work so well -_-
+            output = blendLayers(ref_text, overlay, BlendType.OVERLAY)
 
-        plank = plank_path.replace("_planks", "").replace(".png", "")
-        root = f"./out/assets/{modid}/textures/block"
-        os.makedirs(root, exist_ok=True)
+            out_plank = plank_path.replace("_planks", "").replace(".png", "")
+            out_root = f"./out/assets/{modid}/{root.replace('./references', '')}"
+            os.makedirs(out_root, exist_ok=True)
 
-        output.save(f"{root}/{plank}_{ref_text_path.replace('./', '')}")
+            output.save(f"{out_root}/{out_plank}{reference_path.replace('./', '')}")
 
 
 def generate_data(modid: str, plank_path: str) -> None:
@@ -113,6 +109,30 @@ def generate_data(modid: str, plank_path: str) -> None:
                 handle.write(data)
 
 
+def post_process(modid: str) -> None:
+    """
+    Performs post-processing tasks like renamining signs from <mat>_sign.png to <mat>.png
+        Args:
+            modid (str): the modid derived from the dirname in the textures dir
+        Returns: None
+    """
+    # Make item models just in case
+    os.makedirs(f"./out/assets/{modid}/models/item", exist_ok=True)
+    for block_model in os.listdir(f"./out/assets/{modid}/models/block"):
+        if not "_inventory" in block_model:
+            continue
+        in_world_model = block_model.replace("_inventory", "")
+        path = f"./out/assets/{modid}/models/item/{in_world_model}"
+        data = {"parent": f"{modid}:block/{block_model.replace('.json', '')}"}
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(data))
+
+    signs_root = f"./out/assets/{modid}/textures/entity/signs/"
+    for sign in os.listdir(signs_root):
+        new_name = sign.replace("_sign", "")
+        os.rename(f"{signs_root}/{sign}", f"{signs_root}/{new_name}")
+
+
 def main() -> None:
     """
     Iters over all textures, generates textures, blockstates & models
@@ -127,6 +147,8 @@ def main() -> None:
         for plank in os.listdir(f"./textures/{modid}"):
             generate_textures(modid, plank)
             generate_data(modid, plank)
+
+        post_process(modid)
 
     for modid in os.listdir("./overrides"):
         if not os.path.isdir(f"./overrides/{modid}"):
