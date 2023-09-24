@@ -23,6 +23,7 @@ def get_color_from_plank(plank_path: str) -> np.ndarray:
     """
     colors = []
     img: cv2.Mat = cv2.imread(plank_path)
+    print(f"{plank_path} is {img.shape[1]}×{img.shape[0]}")
 
     # Color @ Center
     rows, cols, _ = img.shape
@@ -139,6 +140,9 @@ def main() -> None:
         Args: None
         Returns: None
     """
+    if os.path.exists("./out"):
+        shutil.rmtree("./out")
+
     for modid in os.listdir("./textures"):
         if not os.path.isdir(f"./textures/{modid}"):
             print(f"[i] ./textures/{modid} is not a directory: skipping")
@@ -155,6 +159,8 @@ def main() -> None:
             print(f"[i] ./overrides/{modid} is not a directory: skipping")
             continue
         for texture in os.listdir(f"./overrides/{modid}"):
+            if not os.path.exists(f"./out/assets/{modid}/textures/block/"):
+                os.makedirs(f"./out/assets/{modid}/textures/block/", exist_ok=True)
             shutil.copyfile(
                 f"./overrides/{modid}/{texture}",
                 f"./out/assets/{modid}/textures/block/{texture}",
